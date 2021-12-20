@@ -92,6 +92,8 @@ drawNamespace.on("connection", (socket) => {
 
     io.emit("init", []);
     drawNamespace.emit("init", []);
+
+    drawNamespace.emit("clear", socket.data.userName);
   });
 
   socket.on("disconnect", () => {
