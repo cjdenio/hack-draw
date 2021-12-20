@@ -1,0 +1,22 @@
+{
+  "name": "holiday-draw",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "cookie-session": "^2.0.0",
+    "ejs": "^3.1.6",
+    "express": "^4.17.2",
+    "socket.io": "^4.4.0"
+  },
+  "devDependencies": {
+    "dotenv": "^10.0.0",
+    "nodemon": "^2.0.15"
+  },
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  }
+}

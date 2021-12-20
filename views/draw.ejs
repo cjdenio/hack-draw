@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>draw!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        font-family: sans-serif;
+      }
+
+      #canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+      }
+
+      button {
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="text-align: center">
+      <h1 id="drawHere" style="border-bottom: 5px solid">draw here</h1>
+      <div
+        style="
+          height: 540px;
+          width: 960px;
+          border: 1px solid black;
+          position: relative;
+          margin: 0 auto;
+        "
+      >
+        <canvas id="canvas" width="960" height="540"></canvas>
+        <img
+          src="/screenshot.png"
+          style="position: absolute; top: 0; left: 0; height: 100%; width: 100%"
+        />
+      </div>
+
+      <div style="margin: 30px 0">
+        <button id="clearButton">Clear</button>
+      </div>
+
+      Users online:
+      <ul id="users"></ul>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io("/draw");
+
+      socket.on("users", (users) => {
+        const el = document.getElementById("users");
+
+        el.innerHTML = "";
+
+        users.forEach((user) => {
+          const li = document.createElement("li");
+          li.innerText = user;
+          el.appendChild(li);
+        });
+      });
+
+      // Generate a random color
+      const colors = [
+        "rgb(100, 100, 100)",
+        "rgb(0, 0, 0)",
+        "rgb(255, 0, 0)",
+        "rgb(0, 255, 0)",
+        "rgb(0, 100, 255)",
+        "rgb(255, 0, 255)",
+        "rgb(255, 100, 0)",
+        "rgb(0, 255, 255)",
+      ];
+
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      document.getElementById("drawHere").style.borderColor = color;
+
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+
+      let isMouseDown = false;
+
+      let prevX, prevY;
+
+      function relativePointToAbsolute(point) {
+        return [point[0] * canvas.width, point[1] * canvas.height];
+      }
+
+      function absolutePointToRelative(point) {
+        return [point[0] / canvas.width, point[1] / canvas.height];
+      }
+
+      socket.on("draw", ({ color, point: [[prevX, prevY], [x, y]] }) => {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(...relativePointToAbsolute([prevX, prevY]));
+        ctx.lineTo(...relativePointToAbsolute([x, y]));
+        ctx.stroke();
+      });
+
+      socket.on("init", (lines) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        lines.forEach(({ color, point: [[prevX, prevY], [x, y]] }) => {
+          ctx.strokeStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(...relativePointToAbsolute([prevX, prevY]));
+          ctx.lineTo(...relativePointToAbsolute([x, y]));
+          ctx.stroke();
+        });
+      });
+
+      function mouseUp(e) {
+        isMouseDown = false;
+        prevX = undefined;
+        prevY = undefined;
+      }
+
+      function mouseDown(e) {
+        isMouseDown = true;
+      }
+
+      function mouseMove(e) {
+        if (isMouseDown) {
+          const rect = canvas.getBoundingClientRect();
+
+          let x = e.clientX - rect.left;
+          let y = e.clientY - rect.top;
+
+          if (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height) {
+            if (prevX && prevY) {
+              socket.emit("draw", {
+                color,
+                point: [
+                  absolutePointToRelative([prevX, prevY]),
+                  absolutePointToRelative([x, y]),
+                ],
+              });
+
+              ctx.strokeStyle = color;
+              ctx.beginPath();
+              ctx.moveTo(prevX, prevY);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+
+            prevX = x;
+            prevY = y;
+          }
+        }
+      }
+
+      function touchMove(e) {
+        if (isMouseDown) {
+          const rect = canvas.getBoundingClientRect();
+
+          let x = e.changedTouches[0].clientX - rect.left;
+          let y = e.changedTouches[0].clientY - rect.top;
+
+          if (x >= 0 && x <= 500 && y >= 0 && y <= 500) {
+            if (prevX && prevY) {
+              socket.emit("draw", {
+                color,
+                point: [
+                  absolutePointToRelative([prevX, prevY]),
+                  absolutePointToRelative([x, y]),
+                ],
+              });
+
+              ctx.strokeStyle = color;
+              ctx.beginPath();
+              ctx.moveTo(prevX, prevY);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+
+            prevX = x;
+            prevY = y;
+          }
+        }
+      }
+
+      document
+        .getElementById("canvas")
+        .addEventListener("mousedown", mouseDown);
+      document
+        .getElementById("canvas")
+        .addEventListener("touchstart", mouseDown);
+
+      document.addEventListener("mouseup", mouseUp);
+      document.addEventListener("touchend", mouseUp);
+
+      document.addEventListener("mousemove", mouseMove);
+      document.addEventListener("touchmove", touchMove);
+
+      document.getElementById("clearButton").addEventListener("click", () => {
+        if (confirm("Are you sure?")) {
+          socket.emit("clear");
+        }
+      });
+    </script>
+  </body>
+</html>
