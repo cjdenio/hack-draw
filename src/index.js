@@ -51,12 +51,10 @@ async function updateUsers() {
 
   drawNamespace.emit(
     "users",
-    sockets.reduce((acc, curr) => {
-      return {
-        ...acc,
-        [curr.data.userName]: curr.data.color,
-      };
-    }, {})
+    sockets.map((s) => ({
+      name: s.data.userName,
+      color: s.data.color,
+    }))
   );
 }
 

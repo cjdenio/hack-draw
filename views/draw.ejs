@@ -61,10 +61,10 @@
 
         el.innerHTML = "";
 
-        Object.keys(users).forEach((user) => {
+        users.forEach(({ name, color }) => {
           const li = document.createElement("li");
-          li.innerText = user;
-          li.style.color = users[user];
+          li.innerText = name;
+          li.style.color = color;
           el.appendChild(li);
         });
       });
