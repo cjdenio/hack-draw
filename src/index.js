@@ -51,14 +51,34 @@ async function updateUsers() {
 
   drawNamespace.emit(
     "users",
-    sockets.map((i) => i.data.userName)
+    sockets.reduce((acc, curr) => {
+      return {
+        ...acc,
+        [curr.data.userName]: curr.data.color,
+      };
+    }, {})
   );
 }
 
 drawNamespace.on("connection", (socket) => {
+  const colors = [
+    "rgb(100, 100, 100)",
+    "rgb(0, 0, 0)",
+    "rgb(255, 0, 0)",
+    "rgb(0, 255, 0)",
+    "rgb(0, 100, 255)",
+    "rgb(255, 0, 255)",
+    "rgb(255, 100, 0)",
+    "rgb(0, 255, 255)",
+  ];
+
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  socket.data.color = color;
+
   updateUsers();
 
   socket.emit("init", lines);
+  socket.emit("color", color);
 
   socket.on("draw", (data) => {
     lines.push(data);

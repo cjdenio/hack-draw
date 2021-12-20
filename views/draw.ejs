@@ -61,28 +61,21 @@
 
         el.innerHTML = "";
 
-        users.forEach((user) => {
+        Object.keys(users).forEach((user) => {
           const li = document.createElement("li");
           li.innerText = user;
+          li.style.color = users[user];
           el.appendChild(li);
         });
       });
 
-      // Generate a random color
-      const colors = [
-        "rgb(100, 100, 100)",
-        "rgb(0, 0, 0)",
-        "rgb(255, 0, 0)",
-        "rgb(0, 255, 0)",
-        "rgb(0, 100, 255)",
-        "rgb(255, 0, 255)",
-        "rgb(255, 100, 0)",
-        "rgb(0, 255, 255)",
-      ];
+      let color = "black";
 
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
-      document.getElementById("drawHere").style.borderColor = color;
+      socket.on("color", (c) => {
+        color = c;
+        document.getElementById("drawHere").style.borderColor = c;
+        ctx.strokeStyle = c;
+      });
 
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
