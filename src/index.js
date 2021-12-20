@@ -8,9 +8,11 @@ import cookieSession from "cookie-session";
 import axios from "axios";
 import { URLSearchParams } from "url";
 import { readFileSync } from "fs";
+import LineDb from "./lineDb.js";
 
 // State
-let lines = [];
+const db = new LineDb();
+await db.init();
 
 // Initialization
 const whitelist = JSON.parse(readFileSync("./src/whitelist.json"));
@@ -75,18 +77,18 @@ drawNamespace.on("connection", (socket) => {
 
   updateUsers();
 
-  socket.emit("init", lines);
+  socket.emit("init", db.lines);
   socket.emit("color", color);
 
-  socket.on("draw", (data) => {
-    lines.push(data);
+  socket.on("draw", async (data) => {
+    await db.push(data);
 
     socket.broadcast.emit("draw", data);
     io.emit("draw", data);
   });
 
-  socket.on("clear", (data) => {
-    lines = [];
+  socket.on("clear", async (data) => {
+    await db.clear();
 
     io.emit("init", []);
     drawNamespace.emit("init", []);
@@ -98,7 +100,7 @@ drawNamespace.on("connection", (socket) => {
 });
 
 io.on("connection", (socket) => {
-  socket.emit("init", lines);
+  socket.emit("init", db.lines);
 });
 
 // Web stuff
